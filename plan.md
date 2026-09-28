@@ -368,3 +368,12 @@ Add remaining industry modules one at a time from validated demand. Add multi-br
 - **Operations:** make every external call retryable, observable, and inspectable.
 
 Record decisions affecting multiple modules as short ADRs in `docs/adr/`, including tenant enforcement, invoice numbering, sync conflicts, money representation, event delivery, and the first industry module.
+
+## 19. Documentation and Testing Rules
+
+- Product, architecture, API, operations, security, and testing documentation belongs under `docs/`.
+- Every new endpoint requires API documentation with authentication, tenant headers, request examples, response examples, errors, permissions, and side effects.
+- Every model requires documentation of ownership, tenant scope, lifecycle, and important invariants.
+- Every architectural decision affecting more than one module requires an ADR under `docs/adr/`.
+- Every feature must include unit or integration tests for its success path, authorization, tenant isolation, validation errors, idempotency where applicable, and important failure paths.
+- A pull request is incomplete until its documentation and tests are updated with the implementation.

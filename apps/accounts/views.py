@@ -14,7 +14,7 @@ from apps.audit.services import record_event
 from apps.tenants.models import Branch, Shop
 
 from .models import Device, Role, ShopMembership, StaffInvitation
-from .permissions import HasShopPermission
+from .permissions import HasShopPermission, TenantContextPermission
 from .serializers import DeviceSerializer, InvitationSerializer, MembershipSerializer, RoleSerializer
 
 User = get_user_model()
@@ -43,7 +43,7 @@ class SignupView(APIView):
 
 
 class DeviceRegistrationView(APIView):
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (TenantContextPermission,)
 
     def post(self, request):
         serializer = DeviceSerializer(data=request.data)
