@@ -87,3 +87,42 @@ class PurchaseItem(TimestampedModel):
 
     class Meta:
         constraints = [models.CheckConstraint(condition=models.Q(product__isnull=False) | models.Q(variant__isnull=False), name="purchase_item_has_target")]
+
+
+class StockTransfer(TenantModel):
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft"
+        COMPLETED = "completed", "Completed"
+        CANCELLED = "cancelled", "Cancelled"
+
+    source_branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="outgoing_transfers")
+    destination_branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="incoming_transfers")
+    reference = models.CharField(max_length=80)
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.DRAFT)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("shop", "reference"), name="unique_transfer_reference_per_shop")]
+
+
+class StockTransferItem(TimestampedModel):
+    transfer = models.ForeignKey(StockTransfer, on_delete=models.PROTECT, related_name="items")
+    product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.PROTECT)
+    variant = models.ForeignKey(ProductVariant, null=True, blank=True, on_delete=models.PROTECT)
+    quantity = models.DecimalField(max_digits=19, decimal_places=6, validators=[MinValueValidator(Decimal("0.000001"))])
+
+
+class StockCount(TenantModel):
+    branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="stock_counts")
+    reference = models.CharField(max_length=80)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("shop", "reference"), name="unique_stock_count_reference_per_shop")]
+
+
+class StockCountItem(TimestampedModel):
+    stock_count = models.ForeignKey(StockCount, on_delete=models.PROTECT, related_name="items")
+    product = models.ForeignKey(Product, null=True, blank=True, on_delete=models.PROTECT)
+    variant = models.ForeignKey(ProductVariant, null=True, blank=True, on_delete=models.PROTECT)
+    counted_quantity = models.DecimalField(max_digits=19, decimal_places=6, validators=[MinValueValidator(Decimal("0"))])

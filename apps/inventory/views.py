@@ -6,10 +6,24 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.accounts.permissions import HasShopPermission
+from apps.catalog.models import Product, ProductVariant
 
 from .models import PurchaseOrder, StockBalance, StockMovement, Supplier
+from .operations import complete_transfer, receive_purchase, reconcile_count
 from .serializers import PurchaseOrderSerializer, StockBalanceSerializer, StockMovementSerializer, SupplierSerializer
 from .services import record_movement
+
+
+def resolve_items(shop, raw_items):
+    resolved = []
+    for raw in raw_items:
+        item = dict(raw)
+        if item.get("product"):
+            item["product"] = Product.objects.unscoped().filter(id=item["product"], shop=shop).first()
+        if item.get("variant"):
+            item["variant"] = ProductVariant.objects.unscoped().filter(id=item["variant"], shop=shop).first()
+        resolved.append(item)
+    return resolved
 
 
 class SupplierView(APIView):
@@ -72,3 +86,61 @@ class PurchaseOrderView(APIView):
             return Response({"code": "cross_shop_reference"}, status=status.HTTP_400_BAD_REQUEST)
         order = serializer.save(shop=request.shop)
         return Response(PurchaseOrderSerializer(order).data, status=status.HTTP_201_CREATED)
+
+
+class PurchaseReceiveView(APIView):
+    permission_classes = (IsAuthenticated, HasShopPermission)
+    required_permission = "manage_inventory"
+
+    @transaction.atomic
+    def post(self, request):
+        supplier = Supplier.objects.filter(id=request.data.get("supplier"), shop=request.shop).first()
+        branch = request.shop.branches.filter(id=request.data.get("branch"), is_active=True).first()
+        if not supplier or not branch or not request.data.get("items"):
+            return Response({"code": "invalid_purchase", "message": "Supplier, branch, and items are required."}, status=400)
+        try:
+            order = receive_purchase(shop=request.shop, branch=branch, supplier=supplier, order_number=request.data["order_number"], items=resolve_items(request.shop, request.data["items"]), actor=request.user, request=request)
+        except (KeyError, TypeError, ValueError) as exc:
+            return Response({"code": "invalid_purchase", "message": str(exc)}, status=400)
+        return Response(PurchaseOrderSerializer(order).data, status=201)
+
+
+class TransferView(APIView):
+    permission_classes = (IsAuthenticated, HasShopPermission)
+    required_permission = "manage_inventory"
+
+    def post(self, request):
+        source = request.shop.branches.filter(id=request.data.get("source_branch"), is_active=True).first()
+        destination = request.shop.branches.filter(id=request.data.get("destination_branch"), is_active=True).first()
+        try:
+            transfer = complete_transfer(shop=request.shop, source_branch=source, destination_branch=destination, reference=request.data["reference"], items=resolve_items(request.shop, request.data["items"]), actor=request.user, request=request)
+        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+            return Response({"code": "invalid_transfer", "message": str(exc)}, status=400)
+        return Response({"id": transfer.id, "status": transfer.status}, status=201)
+
+
+class StockCountView(APIView):
+    permission_classes = (IsAuthenticated, HasShopPermission)
+    required_permission = "adjust_inventory"
+
+    def post(self, request):
+        branch = request.shop.branches.filter(id=request.data.get("branch"), is_active=True).first()
+        try:
+            count = reconcile_count(shop=request.shop, branch=branch, reference=request.data["reference"], items=resolve_items(request.shop, request.data["items"]), actor=request.user, request=request)
+        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+            return Response({"code": "invalid_stock_count", "message": str(exc)}, status=400)
+        return Response({"id": count.id, "completed_at": count.completed_at}, status=201)
+
+
+class StockThresholdView(APIView):
+    permission_classes = (IsAuthenticated, HasShopPermission)
+    required_permission = "manage_inventory"
+
+    def patch(self, request, balance_id):
+        balance = StockBalance.objects.get(id=balance_id)
+        threshold = request.data.get("low_stock_threshold")
+        if threshold is None:
+            return Response({"code": "threshold_required"}, status=400)
+        balance.low_stock_threshold = threshold
+        balance.save(update_fields=("low_stock_threshold", "updated_at"))
+        return Response(StockBalanceSerializer(balance).data)
