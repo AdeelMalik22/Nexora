@@ -4,6 +4,7 @@ from django.db import connection
 from rest_framework.permissions import BasePermission
 
 from apps.common.context import set_tenant_context
+from apps.tenants.models import Branch
 
 from .models import ShopMembership
 
@@ -21,11 +22,22 @@ def resolve_tenant(request):
     ).first()
     if membership is None:
         return False
-    tokens = set_tenant_context(shop_id)
+    branch = None
+    raw_branch_id = request.headers.get("X-Branch-ID")
+    if raw_branch_id:
+        try:
+            branch = Branch.objects.filter(id=UUID(raw_branch_id), shop_id=shop_id, is_active=True).first()
+        except ValueError:
+            return False
+        if branch is None:
+            return False
+    tokens = set_tenant_context(shop_id, branch.id if branch else None)
     request.shop = membership.shop
     request.membership = membership
+    request.branch = branch
     request._request.shop = membership.shop
     request._request.membership = membership
+    request._request.branch = branch
     request._request._tenant_context_tokens = tokens
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:

@@ -40,7 +40,32 @@ class AccountsAPITests(APITestCase):
             format="json",
         )
         self.assertEqual(response.status_code, 201)
+        self.assertIn("device_credential", response.data)
         self.assertIsNone(Device.objects.unscoped().get(device_id="counter-01").approved_at)
+
+    def test_invitation_can_be_accepted_once(self):
+        staff_role = Role.objects.create(shop=self.shop, name="Cashier")
+        response = self.client.post(
+            reverse("invitation-create"),
+            {"email": "cashier@example.com", "role": str(staff_role.id), "expires_at": "2099-01-01T00:00:00Z"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 201)
+        token = response.data["token"]
+        self.client.force_authenticate(None)
+        response = self.client.post(
+            reverse("invitation-accept"),
+            {"token": token, "username": "cashier", "password": "strong-password"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(ShopMembership.objects.unscoped().filter(user__username="cashier", role=staff_role).exists())
+        response = self.client.post(
+            reverse("invitation-accept"),
+            {"token": token, "username": "cashier-two", "password": "strong-password"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 400)
 
     def test_owner_can_approve_and_revoke_device(self):
         device = Device.objects.unscoped().create(shop=self.shop, user=self.user, device_id="counter-02", name="Counter")

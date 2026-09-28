@@ -8,8 +8,10 @@ from .views import (
     DeviceRegistrationView,
     InvitationCreateView,
     MembershipListView,
+    MembershipActionView,
     RoleListView,
     SignupView,
+    InvitationAcceptView,
 )
 
 urlpatterns = [
@@ -22,4 +24,6 @@ urlpatterns = [
     path("roles/", RoleListView.as_view(), name="role-list"),
     path("memberships/", MembershipListView.as_view(), name="membership-list"),
     path("invitations/", InvitationCreateView.as_view(), name="invitation-create"),
+    path("invitations/accept/", InvitationAcceptView.as_view(), name="invitation-accept"),
+    path("memberships/<uuid:membership_id>/<str:action>/", MembershipActionView.as_view(), name="membership-action"),
 ]

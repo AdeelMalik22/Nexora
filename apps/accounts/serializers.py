@@ -31,3 +31,9 @@ class InvitationSerializer(serializers.ModelSerializer):
         model = StaffInvitation
         fields = ("id", "email", "role", "expires_at", "accepted_at", "created_at")
         read_only_fields = ("id", "accepted_at", "created_at")
+
+
+class InvitationAcceptSerializer(serializers.Serializer):
+    token = serializers.CharField()
+    username = serializers.CharField(required=False)
+    password = serializers.CharField(write_only=True, min_length=8)

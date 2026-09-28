@@ -19,9 +19,12 @@ Implemented so far:
 - Shop memberships, roles, and permissions
 - JWT login and refresh-token rotation
 - Device registration, approval, listing, and revocation
+- Device credentials and branch-aware tenant context
+- Staff invitation acceptance and membership activation controls
 - Tenant-aware request context and scoped query helpers
 - PostgreSQL Row-Level Security setup
 - Audit log model and event service
+- Audit log API, Celery configuration, production container, and CI checks
 - Health endpoints
 - Documentation and tenant-isolation test foundations
 

@@ -41,6 +41,8 @@ class Device(TenantModel):
     last_seen_at = models.DateTimeField(null=True, blank=True)
     approved_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
+    credential_hash = models.CharField(max_length=64, blank=True)
+    credential_created_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         constraints = [models.UniqueConstraint(fields=("shop", "device_id"), name="unique_device_per_shop")]
