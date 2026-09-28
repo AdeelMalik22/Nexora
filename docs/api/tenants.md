@@ -1,0 +1,12 @@
+# Tenant API Rules
+
+Every protected tenant request must include:
+
+```http
+Authorization: Bearer <access-token>
+X-Shop-ID: <shop-uuid>
+```
+
+The server validates that the authenticated user has an active membership in the selected shop. Tenant query managers return no rows without an active context, and PostgreSQL RLS applies the same shop boundary at the database layer.
+
+Clients must treat shop IDs as opaque identifiers and must never select a shop by trusting a value from an unverified token or URL alone.

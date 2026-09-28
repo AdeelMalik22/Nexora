@@ -26,6 +26,7 @@ class ShopMembership(TenantModel):
     user = models.ForeignKey(User, on_delete=models.PROTECT, related_name="memberships")
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="memberships")
     is_active = models.BooleanField(default=True)
+    is_owner = models.BooleanField(default=False)
     joined_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -38,6 +39,7 @@ class Device(TenantModel):
     name = models.CharField(max_length=120)
     platform = models.CharField(max_length=32, blank=True)
     last_seen_at = models.DateTimeField(null=True, blank=True)
+    approved_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
@@ -46,3 +48,25 @@ class Device(TenantModel):
     @property
     def is_revoked(self):
         return self.revoked_at is not None
+
+    @property
+    def is_approved(self):
+        return self.approved_at is not None and not self.is_revoked
+
+
+class StaffInvitation(TenantModel):
+    email = models.EmailField()
+    role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name="invitations")
+    invited_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="sent_invitations")
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=("shop", "email"),
+                condition=models.Q(accepted_at__isnull=True),
+                name="one_pending_invitation_per_email",
+            )
+        ]

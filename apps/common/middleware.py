@@ -24,7 +24,7 @@ class TenantContextMiddleware:
         except ValueError:
             return JsonResponse({"code": "invalid_shop_id", "message": "X-Shop-ID must be a UUID."}, status=400)
 
-        membership = ShopMembership.objects.unscoped().filter(user=request.user, shop_id=shop_id, is_active=True).first()
+        membership = ShopMembership.objects.unscoped().select_related("shop", "role").filter(user=request.user, shop_id=shop_id, is_active=True).first()
         if membership is None:
             return JsonResponse({"code": "shop_access_denied", "message": "You do not have access to this shop."}, status=403)
 

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
-from .models import Device, Role, ShopMembership, User
+from .models import Device, Role, ShopMembership, StaffInvitation, User
 
 
 @admin.register(User)
@@ -24,5 +24,11 @@ class ShopMembershipAdmin(admin.ModelAdmin):
 
 @admin.register(Device)
 class DeviceAdmin(admin.ModelAdmin):
-    list_display = ("device_id", "name", "user", "shop", "revoked_at")
+    list_display = ("device_id", "name", "user", "shop", "approved_at", "revoked_at")
     list_filter = ("shop", "revoked_at")
+
+
+@admin.register(StaffInvitation)
+class StaffInvitationAdmin(admin.ModelAdmin):
+    list_display = ("email", "shop", "role", "expires_at", "accepted_at")
+    list_filter = ("shop", "role")
