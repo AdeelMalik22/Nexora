@@ -29,6 +29,7 @@ Implemented so far:
 - Inventory suppliers, append-only movements, and branch stock balances
 - Sales carts, immutable invoice snapshots, stock deduction, and payments
 - Customer profiles, credit limits, and append-only khata ledger
+- Daily sales, stock, credit, cash, and profit reports
 - Health endpoints
 - Documentation and tenant-isolation test foundations
 
@@ -163,6 +164,7 @@ Documentation is part of the definition of done. Start with the [documentation i
 - [Inventory API](docs/api/inventory.md)
 - [Sales and payments API](docs/api/sales.md)
 - [Customers and khata API](docs/api/customers.md)
+- [Reports API](docs/api/reports.md)
 - [Documentation rules](docs/development/documentation.md)
 - [Testing strategy](docs/testing/strategy.md)
 - [Backend plan](plan.md)
