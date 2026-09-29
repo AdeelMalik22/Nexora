@@ -3,6 +3,7 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db import transaction
 
 from apps.audit.services import record_event
+from apps.customers.services import record_entry
 from apps.inventory.services import record_movement
 from apps.payments.models import Payment
 
@@ -45,9 +46,13 @@ def finalize_cart(*, shop, cart_id, payments, actor, request=None):
     invoice.tax_total = tax_total.quantize(MONEY)
     invoice.total = (invoice.subtotal - invoice.discount_total + invoice.tax_total).quantize(MONEY)
     paid = sum((Decimal(str(payment["amount"])) for payment in payments), Decimal("0"))
-    if paid != invoice.total:
+    credit = invoice.total - paid
+    if credit < 0 or (credit > 0 and cart.customer_id is None):
         raise ValueError("Payment total must equal invoice total.")
-    invoice.save(update_fields=("subtotal", "discount_total", "tax_total", "total", "updated_at"))
+    if credit:
+        record_entry(shop=shop, customer=cart.customer, entry_type="charge", amount=credit, description=f"Credit sale {invoice_number}", actor=actor, request=request, invoice=invoice)
+    invoice.customer_id = cart.customer_id
+    invoice.save(update_fields=("subtotal", "discount_total", "tax_total", "total", "customer", "updated_at"))
     for payment in payments:
         Payment.objects.create(shop=shop, invoice=invoice, payment_method_id=payment["payment_method"], amount=payment["amount"], reference=payment.get("reference", ""))
     cart.status = Cart.Status.FINALIZED
