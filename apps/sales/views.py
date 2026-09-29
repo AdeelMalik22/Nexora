@@ -22,7 +22,13 @@ class CartView(APIView):
         branch = request.shop.branches.filter(id=request.data.get("branch"), is_active=True).first()
         if branch is None:
             return Response({"code": "invalid_branch"}, status=400)
-        cart = Cart.objects.create(shop=request.shop, branch=branch, cashier=request.user)
+        customer = None
+        if request.data.get("customer"):
+            from apps.customers.models import Customer
+            customer = Customer.objects.filter(id=request.data["customer"], shop=request.shop, is_active=True).first()
+            if customer is None:
+                return Response({"code": "invalid_customer"}, status=400)
+        cart = Cart.objects.create(shop=request.shop, branch=branch, cashier=request.user, customer=customer)
         return Response(CartSerializer(cart).data, status=201)
 
 

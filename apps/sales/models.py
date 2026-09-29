@@ -17,6 +17,7 @@ class Cart(TenantModel):
 
     branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="carts")
     cashier = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="carts")
+    customer = models.ForeignKey("customers.Customer", null=True, blank=True, on_delete=models.PROTECT, related_name="carts")
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
 
 
@@ -36,6 +37,7 @@ class Invoice(TenantModel):
 
     branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="invoices")
     cart = models.OneToOneField(Cart, on_delete=models.PROTECT, related_name="invoice")
+    customer = models.ForeignKey("customers.Customer", null=True, blank=True, on_delete=models.PROTECT, related_name="invoices")
     invoice_number = models.CharField(max_length=100)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.FINALIZED)
     subtotal = models.DecimalField(max_digits=19, decimal_places=4, default=Decimal("0"))

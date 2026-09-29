@@ -28,6 +28,7 @@ Implemented so far:
 - Catalog products, variants, units, categories, barcodes, tax categories, and price lists
 - Inventory suppliers, append-only movements, and branch stock balances
 - Sales carts, immutable invoice snapshots, stock deduction, and payments
+- Customer profiles, credit limits, and append-only khata ledger
 - Health endpoints
 - Documentation and tenant-isolation test foundations
 
@@ -161,6 +162,7 @@ Documentation is part of the definition of done. Start with the [documentation i
 - [Catalog API](docs/api/catalog.md)
 - [Inventory API](docs/api/inventory.md)
 - [Sales and payments API](docs/api/sales.md)
+- [Customers and khata API](docs/api/customers.md)
 - [Documentation rules](docs/development/documentation.md)
 - [Testing strategy](docs/testing/strategy.md)
 - [Backend plan](plan.md)
