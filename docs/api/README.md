@@ -7,5 +7,7 @@ API documentation is organized by bounded context. Current references:
 - [Catalog API](catalog.md)
 - [Inventory API](inventory.md)
 - [Sales and payments API](sales.md)
+- [Returns and cash API](returns-cash.md)
+- [Endpoint coverage status](endpoint-status.md)
 
 New endpoint groups should receive their own document when they become large enough to have independent permissions, workflows, or client behavior.

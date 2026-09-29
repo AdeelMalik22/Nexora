@@ -51,3 +51,20 @@ class CheckoutTests(APITestCase):
         response = self.client.post(reverse("sales-cart-finalize", args=(cart_id,)), {"payments": [{"payment_method": str(self.method.id), "amount": "100"}]}, format="json")
         self.assertEqual(response.status_code, 400)
         self.assertEqual(StockBalance.objects.unscoped().get(product=self.product).quantity, Decimal("10"))
+
+    def test_return_restores_stock_and_creates_credit_note(self):
+        response = self.client.post(reverse("sales-carts"), {"branch": str(self.branch.id)}, format="json")
+        cart_id = response.data["id"]
+        self.client.post(reverse("sales-cart-items", args=(cart_id,)), {"product": str(self.product.id), "quantity": "2", "unit_price": "100"}, format="json")
+        response = self.client.post(reverse("sales-cart-finalize", args=(cart_id,)), {"payments": [{"payment_method": str(self.method.id), "amount": "200"}]}, format="json")
+        invoice_item = response.data["items"][0]
+        response = self.client.post(reverse("sales-returns"), {"invoice": response.data["id"], "branch": str(self.branch.id), "reason": "Damaged", "items": [{"invoice_item": invoice_item["id"], "quantity": "1"}], "refund_amount": "100"}, format="json")
+        self.assertEqual(response.status_code, 201, response.data)
+        self.assertEqual(StockBalance.objects.unscoped().get(product=self.product).quantity, Decimal("9"))
+
+    def test_shift_close_records_cash_variance(self):
+        response = self.client.post(reverse("sales-shifts"), {"branch": str(self.branch.id), "opening_cash": "100"}, format="json")
+        self.assertEqual(response.status_code, 201)
+        response = self.client.post(reverse("sales-shift-close", args=(response.data["id"],)), {"closing_cash": "90"}, format="json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["cash_variance"], "-10.0000")

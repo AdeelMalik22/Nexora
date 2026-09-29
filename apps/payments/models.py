@@ -27,3 +27,9 @@ class Payment(TimestampedModel):
     amount = models.DecimalField(max_digits=19, decimal_places=4, validators=[MinValueValidator(Decimal("0.0001"))])
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.COMPLETED)
     reference = models.CharField(max_length=120, blank=True)
+
+
+class Refund(TimestampedModel):
+    payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name="refunds")
+    amount = models.DecimalField(max_digits=19, decimal_places=4, validators=[MinValueValidator(Decimal("0.0001"))])
+    reason = models.TextField()
