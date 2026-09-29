@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Cart, CartItem, Invoice, InvoiceItem
+from .models import Cart, CartItem, Invoice, InvoiceItem, Return, Shift
 
 
 class CartItemSerializer(serializers.ModelSerializer):
@@ -22,7 +22,7 @@ class CartSerializer(serializers.ModelSerializer):
 class InvoiceItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvoiceItem
-        fields = ("product_name", "sku", "quantity", "unit_price", "discount", "tax_rate", "line_total")
+        fields = ("id", "product_name", "sku", "quantity", "unit_price", "discount", "tax_rate", "line_total")
 
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -31,3 +31,17 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invoice
         fields = ("id", "invoice_number", "branch", "status", "subtotal", "discount_total", "tax_total", "total", "items", "created_at")
+
+
+class ReturnSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Return
+        fields = ("id", "invoice", "branch", "reason", "total", "created_at")
+        read_only_fields = ("id", "total", "created_at")
+
+
+class ShiftSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Shift
+        fields = ("id", "branch", "cashier", "status", "opening_cash", "closing_cash", "cash_variance", "opened_at", "closed_at")
+        read_only_fields = ("id", "cashier", "status", "closing_cash", "cash_variance", "opened_at", "closed_at")

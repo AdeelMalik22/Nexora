@@ -63,3 +63,48 @@ class InvoiceItem(TimestampedModel):
 class InvoiceSequence(TenantModel):
     branch = models.OneToOneField(Branch, on_delete=models.PROTECT, related_name="invoice_sequence")
     next_number = models.PositiveBigIntegerField(default=1)
+
+
+class Return(TenantModel):
+    invoice = models.ForeignKey(Invoice, on_delete=models.PROTECT, related_name="returns")
+    branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="returns")
+    reason = models.TextField()
+    total = models.DecimalField(max_digits=19, decimal_places=4, default=Decimal("0"))
+
+
+class ReturnItem(TimestampedModel):
+    return_record = models.ForeignKey(Return, on_delete=models.PROTECT, related_name="items")
+    invoice_item = models.ForeignKey(InvoiceItem, on_delete=models.PROTECT)
+    quantity = models.DecimalField(max_digits=19, decimal_places=6)
+    amount = models.DecimalField(max_digits=19, decimal_places=4)
+
+
+class CreditNote(TenantModel):
+    return_record = models.OneToOneField(Return, on_delete=models.PROTECT, related_name="credit_note")
+    number = models.CharField(max_length=100)
+    amount = models.DecimalField(max_digits=19, decimal_places=4)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=("shop", "number"), name="unique_credit_note_per_shop")]
+
+
+class Shift(TenantModel):
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        CLOSED = "closed", "Closed"
+
+    branch = models.ForeignKey(Branch, on_delete=models.PROTECT, related_name="shifts")
+    cashier = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="shifts")
+    status = models.CharField(max_length=16, choices=Status.choices, default=Status.OPEN)
+    opening_cash = models.DecimalField(max_digits=19, decimal_places=4, default=Decimal("0"))
+    closing_cash = models.DecimalField(max_digits=19, decimal_places=4, null=True, blank=True)
+    cash_variance = models.DecimalField(max_digits=19, decimal_places=4, null=True, blank=True)
+    opened_at = models.DateTimeField(auto_now_add=True)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+
+class CashDrawerEntry(TimestampedModel):
+    shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="cash_entries")
+    amount = models.DecimalField(max_digits=19, decimal_places=4)
+    reason = models.CharField(max_length=160)
+    entry_type = models.CharField(max_length=32)
